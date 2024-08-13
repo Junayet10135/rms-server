@@ -28,13 +28,36 @@ async function run() {
 
         const menuCollection = client.db("MinimalistCafeDB").collection("menu");
         const reviewsCollection = client.db("MinimalistCafeDB").collection("reviews");
+        const cartCollection = client.db("MinimalistCafeDB").collection("cart");
+
+        //for get menu data 
 
         app.get('/menu', async (req, res) => {
             const result = await menuCollection.find().toArray();
             res.send(result);
         })
+
+        //for get review data 
+
         app.get('/review', async (req, res) => {
             const result = await reviewsCollection.find().toArray();
+            res.send(result);
+        })
+
+        //for get cart data 
+
+        app.get('/carts', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
+            const result = await cartCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //for post cart data 
+
+        app.post('/carts', async (req, res) => {
+            const cartItem = req.body;
+            const result = await cartCollection.insertOne(cartItem);
             res.send(result);
         })
 
