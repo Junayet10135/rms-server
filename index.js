@@ -1,6 +1,7 @@
 const express = require('express');
 const app = express();
 const cors = require('cors');
+const nodemailer = require('nodemailer');
 const jwt = require('jsonwebtoken');
 require('dotenv').config()
 const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
@@ -35,6 +36,8 @@ async function run() {
         const reviewsCollection = client.db("MinimalistCafeDB").collection("reviews");
         const cartCollection = client.db("MinimalistCafeDB").collection("cart");
         const paymentCollection = client.db("MinimalistCafeDB").collection("payments");
+        const contactCollection = client.db("MinimalistCafeDB").collection("contacts");
+        const reservationCollection = client.db("MinimalistCafeDB").collection("reservations");
 
         // jwt related api
         app.post('/jwt', async (req, res) => {
@@ -191,6 +194,37 @@ async function run() {
             const result = await reviewsCollection.find().toArray();
             res.send(result);
         })
+        //for post review data 
+
+        app.post('/review', async (req, res) => {
+            const review = req.body;
+            const result = await reviewsCollection.insertOne(review);
+            res.send(result);
+        })
+
+        //for post reservation data 
+
+        app.post('/reservation', async (req, res) => {
+            const reservation = req.body;
+            const result = await reservationCollection.insertOne(reservation);
+            res.send(result);
+        })
+
+        //for get reservation data 
+
+        app.get('/reservation', async (req, res) => {
+            const result = await reservationCollection.find().toArray();
+            res.send(result);
+        })
+
+        //for delete reservation  data 
+
+        app.delete('/reservation/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await reservationCollection.deleteOne(query);
+            res.send(result);
+        });
 
         //for get cart data 
 
@@ -335,6 +369,44 @@ async function run() {
             res.send(result);
 
         })
+
+        //mail for contact us
+
+        // POST endpoint to handle form submission
+        app.post('/email-send', async (req, res) => {
+            const { name, email, message } = req.body;
+
+            try {
+                // Save the form data to MongoDB               
+                const result = await contactCollection.insertOne({ name, email, message, date: new Date() });
+
+                console.log(`New contact added with ID: ${result.insertedId}`);
+
+                // Set up Nodemailer
+                const transporter = nodemailer.createTransport({
+                    service: 'gmail',
+                    auth: {
+                        user: process.env.EMAIL_USER,
+                        pass: process.env.EMAIL_PASS,
+                    },
+                });
+
+                const mailOptions = {
+                    from: email,
+                    to: 'admin@example.com',
+                    subject: `Contact Us Form Submission from ${name}`,
+                    text: `You have a new message from ${name} (${email}):\n\n${message}`,
+                };
+
+                // Send the email
+                await transporter.sendMail(mailOptions);
+
+                res.status(200).json({ message: 'Email sent and data stored successfully' });
+            } catch (error) {
+                console.error('Error saving data or sending email:', error);
+                res.status(500).json({ error: 'Failed to send email and save data' });
+            }
+        });
 
         // Send a ping to confirm a successful connection
         await client.db("admin").command({ ping: 1 });
