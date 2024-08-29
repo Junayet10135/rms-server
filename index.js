@@ -38,6 +38,8 @@ async function run() {
         const paymentCollection = client.db("MinimalistCafeDB").collection("payments");
         const contactCollection = client.db("MinimalistCafeDB").collection("contacts");
         const reservationCollection = client.db("MinimalistCafeDB").collection("reservations");
+        const stockCollection = client.db("MinimalistCafeDB").collection("stocks");
+        const wasteCollection = client.db("MinimalistCafeDB").collection("wastes");
 
         // jwt related api
         app.post('/jwt', async (req, res) => {
@@ -201,6 +203,43 @@ async function run() {
             const result = await reviewsCollection.insertOne(review);
             res.send(result);
         })
+        //stock management POST
+        app.post('/stock', verifyToken, verifyAdmin, async (req, res) => {
+            const item = req.body;
+            const result = await stockCollection.insertOne(item);
+            res.send(result);
+        });
+
+
+        //stock management GET
+        app.get('/stock', async (req, res) => {
+            const result = await stockCollection.find().toArray();
+            res.send(result);
+        });
+
+        //stock delete
+        app.delete('/stock/:id', verifyToken, verifyAdmin, async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: new ObjectId(id) }
+            const result = await stockCollection.deleteOne(query);
+            res.send(result);
+        })
+
+        //waste management POST
+        app.post('/waste', verifyToken, verifyAdmin, async (req, res) => {
+            const item = req.body;
+            const result = await wasteCollection.insertOne(item);
+            res.send(result);
+        });
+
+
+        //waste management GET
+        app.get('/waste', async (req, res) => {
+            const result = await wasteCollection.find().toArray();
+            res.send(result);
+        });
+
+
 
         //for post reservation data 
 
